@@ -123,7 +123,7 @@ function itemHtml(i) {
       <div class="rk">${n}${delta}</div></div>
     ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
-      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
+      ${top5Html(i, ref, D.today, '', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 캡처' : '캡처'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
         ${ref && ref.cap_key ? `<div class="capthumb" onclick="openItemCap(${i.id}, '${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="캡처" loading="lazy"></div>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
     </div>
