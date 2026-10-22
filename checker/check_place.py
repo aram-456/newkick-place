@@ -107,7 +107,19 @@ def check(page, it, date):
             if res.get("error"):
                 raise RuntimeError(res["error"])
             wait_images(page)
-            page.wait_for_timeout(500)
+            # 지도 타일이 다 뜨도록 네트워크가 조용해질 때까지 대기 + 로딩 표시가 사라질 때까지 대기
+            try:
+                page.wait_for_load_state("networkidle", timeout=12000)
+            except Exception:
+                pass
+            try:
+                page.wait_for_function("""() => { const s = document.querySelector('[data-nk-cap]'); if (!s) return true;
+                  const sp = [...s.querySelectorAll('[class*="loading"],[class*="spinner"],[class*="Loading"]')].filter(e => e.offsetParent);
+                  const cv = [...s.querySelectorAll('canvas, img')].filter(e => e.offsetParent);
+                  return sp.length === 0 && cv.length > 0; }""", timeout=10000)
+            except Exception:
+                log("  지도 로딩이 늦어 그대로 진행")
+            page.wait_for_timeout(1500)
             key = f"cap/{date}/{it['id']}-{secrets.token_hex(6)}.jpg"
             img = page.locator("[data-nk-cap]").first.screenshot(type="jpeg", quality=82)
             api("PUT", "/api/ingest/cap?key=" + urllib.parse.quote(key, safe="/"), raw=img, ctype="image/jpeg")
