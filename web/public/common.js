@@ -94,10 +94,10 @@ function progHtml(i, checks, today) {
   return `<div class="prog"><div class="pt"><span>노출 <b>${done}</b> / ${target}일${i.round > 1 ? ` · ${i.round}회차` : ''}</span><span>${right}</span></div><div class="pb"><i style="width:${pct}%"></i></div></div>`;
 }
 // 오늘 상위 n개 (광고 제외) 목록 상자
-function top5Html(i, ref, today, note) {
+function top5Html(i, ref, today, note, extra) {
   const list = ref && ref.top_list ? ref.top_list.slice(0, i.top_n) : [];
   const lis = list.map((x, k) => `<li class="${x.id === i.place_id ? 'me' : ''}"><b>${k + 1}</b><span>${esc(x.name || '이름 없음')}</span></li>`).join('');
   return `<div class="box"><div class="bt"><span>${ref ? (ref.date === today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span></div>
-    ${lis ? `<ul class="top5">${lis}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}${note ? `<div class="g5">${note}</div>` : ''}</div>`;
+    ${lis ? `<ul class="top5">${lis}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}${extra || ''}${note ? `<div class="g5">${note}</div>` : ''}</div>`;
 }
 const placeLink = i => i.place_url && /^https?:\/\//.test(i.place_url) ? i.place_url : `https://m.place.naver.com/place/${i.place_id}`;
