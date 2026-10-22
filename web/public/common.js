@@ -80,3 +80,24 @@ function capMove(d) { capCtx.idx = Math.min(Math.max(capCtx.idx + d, 0), capCtx.
 const CAP_MODAL = `<div class="md" id="cap" hidden onclick="if(event.target===this)this.hidden=true"><div class="mb"><button class="x" onclick="$('#cap').hidden=true">닫기</button>
 <h2 id="capT"></h2><div class="sub" id="capS"></div><div class="capw" id="capI"></div>
 <div class="nav2"><button class="btn" id="capP" onclick="capMove(-1)">이전 날짜</button><button class="btn" id="capN" onclick="capMove(1)">다음 날짜</button></div></div></div>`;
+
+// 진행 막대 (관리자·업체 화면 공통): 노출 n / 25일 · 남은 n일 · 시작일 · 마감 예정일
+// 마감 예정일 = 남은 날을 매일 채운다고 가정한 예상일 (오늘 체크가 끝났으면 내일부터 계산)
+function progHtml(i, checks, today) {
+  const done = i.done || 0, target = i.target || 25, left = Math.max(0, target - done);
+  const pct = Math.min(100, Math.round(done / target * 100));
+  const checkedToday = (checks || []).some(c => c.date === today && c.in_top !== null && c.in_top !== undefined);
+  let right;
+  if (!i.active && i.closed_at) right = `${i.close_kind === 'done' ? '목표 달성' : ''} 마감 ${md(i.closed_at)}`;
+  else if (!left) right = '목표 달성';
+  else right = `남은 ${left}일 · ${i.cycle_from ? md(i.cycle_from) + ' 시작 · ' : ''}마감 예정 ${md(addDays(today, checkedToday ? left : left - 1))}`;
+  return `<div class="prog"><div class="pt"><span>노출 <b>${done}</b> / ${target}일${i.round > 1 ? ` · ${i.round}회차` : ''}</span><span>${right}</span></div><div class="pb"><i style="width:${pct}%"></i></div></div>`;
+}
+// 오늘 상위 n개 (광고 제외) 목록 상자
+function top5Html(i, ref, today, note) {
+  const list = ref && ref.top_list ? ref.top_list.slice(0, i.top_n) : [];
+  const lis = list.map((x, k) => `<li class="${x.id === i.place_id ? 'me' : ''}"><b>${k + 1}</b><span>${esc(x.name || '이름 없음')}</span></li>`).join('');
+  return `<div class="box"><div class="bt"><span>${ref ? (ref.date === today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span></div>
+    ${lis ? `<ul class="top5">${lis}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}${note ? `<div class="g5">${note}</div>` : ''}</div>`;
+}
+const placeLink = i => i.place_url && /^https?:\/\//.test(i.place_url) ? i.place_url : `https://m.place.naver.com/place/${i.place_id}`;
