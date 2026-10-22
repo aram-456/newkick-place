@@ -24,7 +24,6 @@
     <div class="co" id="coName">&nbsp;</div>
     <h1>네이버 플레이스 순위 리포트</h1>
     <div class="meta" id="meta">불러오는 중…</div>
-    <div class="lead" id="lead"></div>
   </section>
   <div id="list"><section class="sec"><div class="skel"></div><div class="skel" style="width:60%"></div></section></div>
   <div class="foot"><img src="/logo.svg" alt="NEWKICK"><span>모바일 네이버 통합검색 기준 · 광고 제외 순위</span></div>
@@ -48,8 +47,6 @@ function render() {
   $('#coName').textContent = D.company.name; $('#coTop').textContent = D.company.name;
   const last = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
   $('#meta').textContent = `${md(t)}(${wd(t)}) 기준` + (last ? ` · 최근 확인 ${last.slice(0, 10) === t ? '오늘' : md(last.slice(0, 10))} ${last.slice(11)}` : '');
-  const tops = items.map(i => ck(i.id).find(c => c.date === t)).filter(c => c && c.in_top).length;
-  $('#lead').innerHTML = items.length ? `진행 중인 키워드 <b>${items.length}개</b> 중 오늘 <b>${tops}개</b>가 상위 5위 안에 노출됐어요` : '';
   D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword, ck(i.id), d); });
   $('#list').innerHTML = (items.length ? items.map(card).join('') : '<section class="sec"><div class="empty">진행 중인 키워드가 없어요</div></section>')
     + (ended.length ? `<section class="sec"><div class="sh"><h2>마감된 키워드</h2></div>${ended.map(i => `<div class="endrow"><span><b>${esc(i.keyword)}</b>${i.round > 1 ? ` (${i.round}회차)` : ''}
@@ -68,7 +65,7 @@ function card(i) {
     <div class="strip three" style="margin-top:16px;max-width:none"><div><div class="k">노출 일수</div><div class="v">${i.done}<small>/ ${i.target}일</small></div></div><div><div class="k">남은 일수</div><div class="v">${Math.max(0, i.target - i.done)}<small>일</small></div></div><div><div class="k">최고 순위</div><div class="v">${best < 99 ? best + '<small>위</small>' : '-'}</div></div></div>
     <div class="prog" style="margin-top:12px"><div class="pt"><span>${i.cycle_from ? md(i.cycle_from) + ' 시작' : ''}${i.round > 1 ? ' · ' + i.round + '회차' : ''}</span><span>${Math.min(100, Math.round(i.done / i.target * 100))}%</span></div><div class="pb"><i style="width:${Math.min(100, Math.round(i.done / i.target * 100))}%"></i></div></div>
     <div class="capbox">
-      <div><div class="cap-h">순위 추이 (30일)</div><div class="box">${chart(cs, D.today, 30, i.top_n)}</div>${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}</div>
+      <div><div class="cap-h">순위 추이 (7일)</div><div class="box">${chart(cs, D.today, 7, i.top_n)}</div>${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}</div>
       <div>${ref && ref.cap_key ? `<div class="cap-h">${ref.date === D.today ? '오늘' : md(ref.date)} 검색 화면</div><div class="shot" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : ''}</div>
     </div></section>`;
 }
