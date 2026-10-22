@@ -58,7 +58,7 @@ function card(i) {
   const n = !ref ? '<div class="n" style="font-size:22px;color:var(--mute)">확인 전</div>' : ref.in_top ? `<div class="n ok">${ref.rank}<small>위</small></div>` : `<div class="n out">${i.top_n}위 밖</div>`;
   const sub = ref && ref !== cur ? `<div class="d eq">${md(ref.date)} 기준</div>` : '';
   return `<section class="sec">
-    <div class="ih"><div class="t"><div class="k">${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
+    <div class="ih"><div class="t"><div class="k">키워드 : ${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
     ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
       ${top5Html(i, ref, D.today, '', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
