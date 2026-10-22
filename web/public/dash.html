@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>플레이스 순위 리포트</title>
+<title>플레이스 리포트</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/common.css?v=1">
@@ -16,13 +16,13 @@
 </style>
 </head><body>
 <div class="bar0"><div class="in">
-  <div class="brand"><img src="/logo.svg" alt="NEWKICK"><i></i><span id="coTop">플레이스 순위 리포트</span></div>
+  <div class="brand"><img src="/logo.svg" alt="NEWKICK"><i></i><span id="coTop">플레이스 리포트</span></div>
   <div class="act" id="staff"></div>
 </div></div>
 <main>
   <section class="hero">
     <div class="co" id="coName">&nbsp;</div>
-    <h1>네이버 플레이스 순위 리포트</h1>
+    <h1>네이버 플레이스 리포트</h1>
     <div class="meta" id="meta">불러오는 중…</div>
   </section>
   <div id="list"><section class="sec"><div class="skel"></div><div class="skel" style="width:60%"></div></section></div>
@@ -43,7 +43,7 @@ async function load() {
 const ck = id => D.checks.filter(c => c.item_id === id);
 function render() {
   const t = D.today, items = D.items.filter(i => i.active), ended = D.items.filter(i => !i.active);
-  document.title = D.company.name + ' 플레이스 순위 리포트';
+  document.title = D.company.name + ' 플레이스 리포트';
   $('#coName').textContent = D.company.name; $('#coTop').textContent = D.company.name;
   const last = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
   $('#meta').textContent = `${md(t)}(${wd(t)}) 기준` + (last ? ` · 최근 확인 ${last.slice(0, 10) === t ? '오늘' : md(last.slice(0, 10))} ${last.slice(11)}` : '');
@@ -61,11 +61,10 @@ function card(i) {
     <div class="ih"><div class="t"><div class="k">${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
     ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
-      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)')}
+      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 검색 화면' : '검색 화면'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
         ${ref && ref.cap_key ? `<div class="capthumb" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : '<div class="sub">확인 후 표시돼요</div>'}</div>
     </div>
-    ${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}
   </section>`;
 }
 document.body.insertAdjacentHTML('beforeend', CAP_MODAL);
