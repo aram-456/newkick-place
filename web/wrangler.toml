@@ -1,0 +1,22 @@
+# 플레이스 순위 대시보드 (Cloudflare Pages)
+name = "newkick-place"
+pages_build_output_dir = "./public"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "newkick-place"
+database_id = "4087185c-f244-4917-8ca7-4272991c3290"
+
+# 상위노출 대시보드 DB: 관리자 계정 로그인 확인용 (읽기만 함)
+[[d1_databases]]
+binding = "AUTH"
+database_name = "naver-check"
+database_id = "fd51a62b-34b4-4de7-98fe-c46808776396"
+
+[[kv_namespaces]]
+binding = "CAPS"
+id = "b30c59274f8a4f54b8b2c0c3a43fb934"
+
+[vars]
+GH_REPO = "aram-456/newkick-place"   # 지금 체크 / 오전 7시 타이머가 실행할 GitHub 저장소
