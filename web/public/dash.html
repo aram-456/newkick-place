@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>플레이스 순위 리포트</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/common.css?v=1">
+<style>
+.lead{font-size:16px;margin-top:12px;color:var(--tx2)}.lead b{color:var(--tx)}
+.capbox{margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.capbox .shot{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff;cursor:zoom-in;max-height:520px}
+.capbox .shot img{width:100%;display:block}
+.capbox .cap-h{font-size:12.5px;color:var(--mute);font-weight:700;margin-bottom:8px}
+@media(max-width:820px){.capbox{grid-template-columns:1fr}.capbox .shot{max-height:none}}
+</style>
+</head><body>
+<div class="bar0"><div class="in">
+  <div class="brand"><img src="/logo.svg" alt="NEWKICK"><i></i><span id="coTop">플레이스 순위 리포트</span></div>
+  <div class="act" id="staff"></div>
+</div></div>
+<main>
+  <section class="hero">
+    <div class="co" id="coName">&nbsp;</div>
+    <h1>네이버 플레이스 순위 리포트</h1>
+    <div class="meta" id="meta">불러오는 중…</div>
+    <div class="lead" id="lead"></div>
+  </section>
+  <div id="list"><section class="sec"><div class="skel"></div><div class="skel" style="width:60%"></div></section></div>
+  <div class="foot"><img src="/logo.svg" alt="NEWKICK"><span>모바일 네이버 통합검색 기준 · 광고 제외 순위</span></div>
+</main>
+<script src="/common.js?v=1"></script>
+<script>
+const slug = decodeURIComponent(location.pathname.split('/')[2] || new URLSearchParams(location.search).get('c') || '');
+let D = null;
+async function load() {
+  try {
+    const r = await fetch('/api/data?c=' + encodeURIComponent(slug)); D = await r.json();
+    if (!r.ok) throw new Error(D.error || '불러오지 못했어요');
+    render();
+  } catch (e) { $('#list').innerHTML = `<section class="sec"><div class="empty">${esc(e.message)}</div></section>`; $('#meta').textContent = ''; }
+  fetch('/api/me').then(r => r.ok ? r.json() : null).then(me => { if (me) $('#staff').innerHTML = '<a class="btn" href="/admin">관리 화면</a>'; });
+}
+const ck = id => D.checks.filter(c => c.item_id === id);
+function render() {
+  const t = D.today, items = D.items.filter(i => i.active), ended = D.items.filter(i => !i.active);
+  document.title = D.company.name + ' 플레이스 순위 리포트';
+  $('#coName').textContent = D.company.name; $('#coTop').textContent = D.company.name;
+  const last = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
+  $('#meta').textContent = `${md(t)}(${wd(t)}) 기준` + (last ? ` · 최근 확인 ${last.slice(0, 10) === t ? '오늘' : md(last.slice(0, 10))} ${last.slice(11)}` : '');
+  const tops = items.map(i => ck(i.id).find(c => c.date === t)).filter(c => c && c.in_top).length;
+  $('#lead').innerHTML = items.length ? `진행 중인 키워드 <b>${items.length}개</b> 중 오늘 <b>${tops}개</b>가 상위 5위 안에 노출됐어요` : '';
+  D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword, ck(i.id), d); });
+  $('#list').innerHTML = (items.length ? items.map(card).join('') : '<section class="sec"><div class="empty">진행 중인 키워드가 없어요</div></section>')
+    + (ended.length ? `<section class="sec"><div class="sh"><h2>마감된 키워드</h2></div>${ended.map(i => `<div class="endrow"><span><b>${esc(i.keyword)}</b>${i.round > 1 ? ` (${i.round}회차)` : ''}
+      <span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성' : '마감'} · 노출 ${i.done}/${i.target}일</span></span>
+      <span class="sub">${i.cycle_from ? md(i.cycle_from) : ''} ~ ${i.closed_at ? md(i.closed_at) : ''} <button class="btn sm" style="margin-left:8px" onclick="capOf${i.id}('${i.closed_at || ''}')">캡처</button></span></div>`).join('')}</section>` : '');
+}
+function card(i) {
+  const cs = ck(i.id), cur = cs.find(c => c.date === D.today), last = cs.at(-1), ref = cur || last;
+  const n = !ref ? '<div class="n" style="font-size:22px;color:var(--mute)">확인 전</div>' : ref.in_top ? `<div class="n ok">${ref.rank}<small>위</small></div>` : `<div class="n out">${i.top_n}위 밖</div>`;
+  const sub = ref && ref !== cur ? `<div class="d eq">${md(ref.date)} 기준</div>` : '';
+  const best = cs.filter(c => c.in_top).reduce((m, c) => Math.min(m, c.rank), 99);
+  const days30 = cs.filter(c => c.date >= addDays(D.today, -29));
+  const inDays = days30.filter(c => c.in_top).length;
+  return `<section class="sec">
+    <div class="ih"><div class="t"><div class="c">키워드</div><div class="k">${esc(i.keyword)}</div><div class="p">${esc(i.place_name || D.company.name)}</div></div><div class="rk">${n}${sub}</div></div>
+    <div class="strip three" style="margin-top:16px;max-width:none"><div><div class="k">노출 일수</div><div class="v">${i.done}<small>/ ${i.target}일</small></div></div><div><div class="k">남은 일수</div><div class="v">${Math.max(0, i.target - i.done)}<small>일</small></div></div><div><div class="k">최고 순위</div><div class="v">${best < 99 ? best + '<small>위</small>' : '-'}</div></div></div>
+    <div class="prog" style="margin-top:12px"><div class="pt"><span>${i.cycle_from ? md(i.cycle_from) + ' 시작' : ''}${i.round > 1 ? ' · ' + i.round + '회차' : ''}</span><span>${Math.min(100, Math.round(i.done / i.target * 100))}%</span></div><div class="pb"><i style="width:${Math.min(100, Math.round(i.done / i.target * 100))}%"></i></div></div>
+    <div class="capbox">
+      <div><div class="cap-h">순위 추이 (30일)</div><div class="box">${chart(cs, D.today, 30, i.top_n)}</div>${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}</div>
+      <div>${ref && ref.cap_key ? `<div class="cap-h">${ref.date === D.today ? '오늘' : md(ref.date)} 검색 화면</div><div class="shot" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : ''}</div>
+    </div></section>`;
+}
+document.body.insertAdjacentHTML('beforeend', CAP_MODAL);
+load();
+</script>
+</body></html>
