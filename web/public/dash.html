@@ -26,7 +26,7 @@
     <div class="meta" id="meta">불러오는 중…</div>
   </section>
   <div id="list"><section class="sec"><div class="skel"></div><div class="skel" style="width:60%"></div></section></div>
-  <div class="foot"><img src="/logo.svg" alt="NEWKICK"><span>모바일 네이버 통합검색 기준 · 광고 제외 순위</span></div>
+  <div class="foot"><img src="/logo.svg" alt="NEWKICK"><span>모바일 검색 기준 5순위 이내 보장 (광고 제외)</span></div>
 </main>
 <script src="/common.js?v=1"></script>
 <script>
@@ -61,7 +61,7 @@ function card(i) {
     <div class="ih"><div class="t"><div class="k">${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
     ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
-      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
+      ${top5Html(i, ref, D.today, '', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 검색 화면' : '검색 화면'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
         ${ref && ref.cap_key ? `<div class="capthumb" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : '<div class="sub">확인 후 표시돼요</div>'}</div>
     </div>
