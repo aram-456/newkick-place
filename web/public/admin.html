@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>플레이스 순위 관리</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/common.css?v=1">
+</head><body>
+<div class="bar0"><div class="in">
+  <div class="brand"><img src="/logo.svg" alt="NEWKICK"><i></i><span>플레이스 순위</span></div>
+  <div class="act">
+    <a class="btn" href="https://newkick.pages.dev/admin" target="_blank" rel="noopener">상위노출 대시보드</a>
+    <button class="btn pri" id="runAll" onclick="runNow()">지금 체크</button>
+    <button class="btn" onclick="logout()">로그아웃</button>
+  </div>
+</div></div>
+<main>
+  <section class="hero">
+    <div class="co">NEWKICK · 네이버 플레이스</div>
+    <h1>오늘 플레이스 순위</h1>
+    <div class="meta" id="meta">불러오는 중…</div>
+    <div class="strip" id="kpi"><div><div class="k">추적 중</div><div class="v">-</div></div><div><div class="k">5위 안</div><div class="v">-</div></div><div><div class="k">5위 밖</div><div class="v">-</div></div><div><div class="k">마지막 체크</div><div class="v">-</div></div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><h2>추적 키워드</h2><span class="sub">모바일 통합검색 · 광고 제외 순위 · 매일 오전 7시 자동 체크</span></div>
+    <div id="list"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
+    <details class="ended" id="endedBox" hidden><summary id="endedSum"></summary><div id="ended"></div></details>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><h2>신규 등록</h2><span class="sub">키워드와 플레이스 링크를 넣으면 업체를 자동으로 찾아요</span></div>
+    <div class="form">
+      <div><label for="fCo">업체명</label><input id="fCo" list="coList" placeholder="예: 한림병원" oninput="coChanged()"><datalist id="coList"></datalist></div>
+      <div id="slugWrap"><label for="fSlug">업체 화면 주소 (영문)</label><input id="fSlug" placeholder="예: hallym"><div class="hint" id="slugHint">업체 화면 주소: /c/영문주소</div></div>
+      <div><label for="fKw">키워드</label><input id="fKw" placeholder="예: 인천종합병원"></div>
+      <div><label for="fLink">플레이스 링크</label><input id="fLink" placeholder="https://naver.me/... 또는 플레이스 주소"></div>
+      <div><label for="fStart">시작일</label><input id="fStart" type="date"><div class="hint">이 날부터 노출일을 셀어요</div></div>
+      <div><label for="fTarget">목표 노출일</label><input id="fTarget" type="number" min="1" value="25"><div class="hint">5위 안 노출이 이 일수를 채우면 자동 마감</div></div>
+    </div>
+    <div class="formact"><button class="btn" onclick="addItem(false)">등록만</button><button class="btn pri" onclick="addItem(true)">등록하고 바로 체크</button></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><h2>자동 체크 기록</h2><span class="sub">최근 12건</span></div>
+    <div class="runs" id="runs"></div>
+  </section>
+  <div class="foot"><img src="/logo.svg" alt="NEWKICK"><span>체크 위치에 따라 실제 휴대폰 화면과 순위가 조금 다를 수 있어요</span></div>
+</main>
+
+<div class="md" id="edit" hidden onclick="if(event.target===this)this.hidden=true"><div class="mb">
+  <button class="x" onclick="$('#edit').hidden=true">닫기</button><h2>키워드 수정</h2><div class="sub" id="eSub"></div>
+  <div class="form" style="grid-template-columns:1fr">
+    <div><label for="eKw">키워드</label><input id="eKw"></div>
+    <div><label for="eStart">시작일</label><input id="eStart" type="date"></div>
+    <div><label for="eTarget">목표 노출일</label><input id="eTarget" type="number" min="1"></div>
+    <div><label for="eLink">플레이스 링크 (바꿀 때만)</label><input id="eLink" placeholder="비워두면 그대로"></div>
+    <div><label for="eMemo">메모</label><input id="eMemo" placeholder="관리자만 보여요"></div>
+  </div>
+  <div class="formact"><button class="btn red" onclick="delItem()">삭제</button><button class="btn" onclick="setActive(0)">마감</button><button class="btn pri" onclick="saveEdit()">저장</button></div>
+</div></div>
+<script src="/common.js?v=1"></script>
+<script>
+let D = null, editId = null;
+async function load() {
+  try { D = await api('admin/data?days=62'); render(); }
+  catch (e) { $('#list').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const coName = slug => D.companies.find(c => c.slug === slug)?.name || slug;
+const checksOf = id => D.checks.filter(c => c.item_id === id);
+function lastTwo(id) { const l = checksOf(id).filter(c => c.in_top !== null); return [l.at(-1), l.at(-2)]; }
+
+function render() {
+  defineCapFns();
+  const t = D.today, act = D.items.filter(i => i.active), end = D.items.filter(i => !i.active);
+  const tc = act.map(i => checksOf(i.id).find(c => c.date === t));
+  const inTop = tc.filter(c => c && c.in_top === 1).length, out = tc.filter(c => c && c.in_top === 0).length;
+  const lastAt = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
+  $('#meta').textContent = `${md(t)}(${wd(t)}) 기준 · ${act.length}개 키워드 추적 중`;
+  $('#kpi').innerHTML = `<div><div class="k">추적 중</div><div class="v">${act.length}<small>개</small></div></div>
+    <div><div class="k">5위 안</div><div class="v" style="color:var(--blue)">${inTop}<small>개</small></div></div>
+    <div><div class="k">5위 밖</div><div class="v" style="color:${out ? 'var(--no)' : 'inherit'}">${out}<small>개</small></div></div>
+    <div><div class="k">마지막 체크</div><div class="v" style="font-size:18px;padding-top:4px">${lastAt ? (lastAt.slice(0, 10) === t ? '오늘 ' : md(lastAt.slice(0, 10)) + ' ') + lastAt.slice(11) : '-'}</div></div>`;
+  $('#list').innerHTML = act.length ? act.map(itemHtml).join('') : '<div class="empty">추적 중인 키워드가 없어요. 아래에서 등록해 주세요</div>';
+  $('#endedBox').hidden = !end.length;
+  $('#endedSum').textContent = `마감된 키워드 ${end.length}개 보기`;
+  $('#ended').innerHTML = end.map(i => `<div class="endrow"><span><b>${esc(coName(i.company))}</b> · ${esc(i.keyword)}${i.round > 1 ? ` (${i.round}회차)` : ''}
+    <span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성' : '마감'} ${i.closed_at ? md(i.closed_at) : ''} · ${i.done}/${i.target}일</span></span>
+    <span class="act"><button class="btn sm" onclick="openItemCap(${i.id})">캡처</button>${i.close_kind === 'done' ? `<button class="btn sm" onclick="extend(${i.id})">연장</button>` : `<button class="btn sm" onclick="setActive(1, ${i.id})">다시 추적</button>`}</span></div>`).join('');
+  $('#coList').innerHTML = D.companies.map(c => `<option value="${esc(c.name)}">`).join('');
+  $('#runs').innerHTML = D.runs.length ? D.runs.map(r => `<div class="r"><span class="w">${esc(r.at ? md(r.at.slice(0, 10)) + ' ' + r.at.slice(11) : r.date)}</span><span class="pill ${r.status === 'done' || r.status === 'started' ? 'blue' : r.status === 'failed' ? 'no' : ''}">${{ started: '시작', done: '완료', failed: '실패', skip: '건너뜀' }[r.status] || esc(r.status)}</span><span>${esc(slotName(r.slot))} ${esc(r.detail || '')}</span></div>`).join('') : '<div class="empty">아직 기록이 없어요</div>';
+  coChanged();
+  if (!$('#fStart').value) $('#fStart').value = D.today;
+}
+const slotName = s => s?.startsWith('cron') ? '오전 자동 체크 ·' : s?.startsWith('manual') ? '지금 체크 ·' : s === 'morning' ? '오전 체크 ·' : s?.includes('22') ? '예비 실행 ·' : s?.includes(' 1 ') ? '보충 체크 ·' : '';
+
+function itemHtml(i) {
+  const cs = checksOf(i.id), [last, prev] = lastTwo(i.id), today = cs.find(c => c.date === D.today);
+  const cur = today || null;
+  let n = '<div class="n" style="font-size:22px;color:var(--mute)">체크 전</div>', delta = '';
+  if (cur && cur.in_top === null) n = '<div class="n" style="font-size:22px;color:var(--wa)">체크 오류</div>';
+  else if (cur) n = cur.in_top ? `<div class="n ok">${cur.rank}<small>위</small></div>` : `<div class="n out">${i.top_n}위 밖</div>`;
+  if (cur && cur.in_top !== null && prev && prev !== cur) {
+    const a = prev.in_top ? prev.rank : i.top_n + 1, b = cur.in_top ? cur.rank : i.top_n + 1;
+    delta = a === b ? '<div class="d eq">어제와 같음</div>' : b < a ? `<div class="d up">▲ ${a - b}계단 상승</div>` : `<div class="d dn">▼ ${b - a}계단 하락</div>`;
+  } else if (!cur && last) delta = `<div class="d eq">최근 ${md(last.date)} ${rankText({ ...last, top_n: i.top_n })}</div>`;
+  const ref = cur && cur.in_top !== null ? cur : last;
+  const top = ref ? ref.top_list.slice(0, i.top_n).map((x, k) => `<li class="${x.id === i.place_id ? 'me' : ''}"><b>${k + 1}</b><span>${esc(x.name || '이름 없음')}</span></li>`).join('') : '';
+  return `<div class="item">
+    <div class="ih"><div class="t"><div class="c">${esc(coName(i.company))}</div><div class="k">${esc(i.keyword)}</div>
+      <div class="p">${esc(i.place_name || '플레이스 ' + i.place_id)}${i.memo ? ' · ' + esc(i.memo) : ''}</div></div>
+      <div class="rk">${n}${delta}</div></div>
+    ${progHtml(i)}
+    <div class="grid2">
+      <div class="box"><div class="bt"><span>순위 추이 (30일)</span></div>${chart(cs, D.today, 30, i.top_n)}</div>
+      <div class="box"><div class="bt"><span>${ref ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span>${ref && ref.ads ? `<span>광고 ${ref.ads}개 제외</span>` : ''}</div>
+        ${top ? `<ul class="top5">${top}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
+    </div>
+    ${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}
+    <div class="ia">
+      <button class="btn sm" onclick="openItemCap(${i.id})">캡처 보기</button>
+      <button class="btn sm" onclick="runNow([${i.id}])">다시 체크</button>
+      <a class="btn sm" href="/c/${encodeURIComponent(i.company)}" target="_blank" rel="noopener">업체 화면</a>
+      <button class="btn sm" onclick="copyLink('${esc(i.company)}')">업체 화면 주소 복사</button>
+      <button class="btn sm" onclick="openEdit(${i.id})">수정</button>
+    </div></div>`;
+}
+function openItemCap(id, date) {
+  const i = D.items.find(x => x.id === id);
+  openCap(`${coName(i.company)} · ${i.keyword}`, checksOf(id).filter(c => c.in_top !== null), date || D.today);
+}
+// 일별 칸 클릭 -> 그 날짜 캡처 (dayChips 가 capOf<id>('날짜') 를 부름)
+function defineCapFns() { D.items.forEach(i => { window['capOf' + i.id] = d => openItemCap(i.id, d); }); }
+
+function progHtml(i) {
+  const pct = Math.min(100, Math.round(i.done / i.target * 100)), left = Math.max(0, i.target - i.done);
+  return `<div class="prog"><div class="pt"><span>노출 <b>${i.done}</b> / ${i.target}일${i.round > 1 ? ` · ${i.round}회차` : ''}</span><span>${left ? '남은 ' + left + '일' : '목표 달성'} · ${i.cycle_from ? md(i.cycle_from) + ' 시작' : ''}</span></div><div class="pb"><i style="width:${pct}%"></i></div></div>`;
+}
+async function extend(id) {
+  const i = D.items.find(x => x.id === id);
+  if (!confirm(`${i.keyword} 키워드를 연장할까요? 오늘부터 새 ${i.target}일 회차를 시작해요`)) return;
+  try { await api('admin/items/' + id, { method: 'PATCH', body: { extend: true, target: i.target } }); toast('연장했어요. 내일 오전 7시부터 다시 체크해요', 3500); load(); } catch (e) { toast(e.message); }
+}
+async function runNow(ids) {
+  const b = $('#runAll'); b.disabled = true;
+  try { await api('admin/run', { method: 'POST', body: { ids: ids || [] } }); toast('체크를 시작했어요. 2~3분 뒤 새로고침하면 반영돼요', 4000); setTimeout(load, 150000); }
+  catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
+}
+async function logout() { await fetch('/api/logout'); location.href = '/'; }
+function copyLink(slug) { navigator.clipboard.writeText(location.origin + '/c/' + slug).then(() => toast('업체 화면 주소를 복사했어요')); }
+function coChanged() {
+  const name = $('#fCo').value.trim(), ex = D && D.companies.find(c => c.name === name);
+  $('#slugWrap').style.display = ex ? 'none' : '';
+  $('#fSlug').oninput = () => $('#slugHint').textContent = '업체 화면 주소: ' + location.origin + '/c/' + ($('#fSlug').value.trim() || '영문주소');
+}
+async function addItem(check) {
+  const body = { company_name: $('#fCo').value.trim(), slug: $('#fSlug').value.trim(), keyword: $('#fKw').value.trim(), link: $('#fLink').value.trim(), start: $('#fStart').value || D.today, target: +$('#fTarget').value || 25, check_now: check };
+  if (!body.company_name || !body.keyword || !body.link) return toast('업체명, 키워드, 플레이스 링크를 모두 입력해 주세요');
+  try {
+    const r = await api('admin/items', { method: 'POST', body });
+    toast(check ? (r.run && r.run.ok ? '등록했어요. 2~3분 뒤 첫 순위가 나와요' : '등록했어요. 체크는 다음 오전 7시에 해요') : '등록했어요', 4000);
+    ['#fKw', '#fLink'].forEach(s => $(s).value = '');
+    await load();
+    if (check && r.run && r.run.ok) setTimeout(load, 150000);
+  } catch (e) { toast(e.message, 4000); }
+}
+function openEdit(id) {
+  const i = D.items.find(x => x.id === id); editId = id;
+  $('#eSub').textContent = `${coName(i.company)} · 플레이스 ${i.place_id}`;
+  $('#eKw').value = i.keyword; $('#eLink').value = ''; $('#eMemo').value = i.memo || '';
+  $('#eStart').value = i.cycle_from || ''; $('#eTarget').value = i.target || 25;
+  $('#edit').hidden = false;
+}
+async function saveEdit() {
+  const body = { keyword: $('#eKw').value.trim(), memo: $('#eMemo').value.trim(), target: +$('#eTarget').value || 25 };
+  if ($('#eStart').value) body.start = $('#eStart').value;
+  if ($('#eLink').value.trim()) body.link = $('#eLink').value.trim();
+  try { await api('admin/items/' + editId, { method: 'PATCH', body }); $('#edit').hidden = true; toast('저장했어요'); load(); } catch (e) { toast(e.message, 4000); }
+}
+async function setActive(on, id) {
+  id = id || editId;
+  if (!on && !confirm('이 키워드를 마감할까요? 내일부터 체크하지 않아요 (기록은 남아요)')) return;
+  try { await api('admin/items/' + id, { method: 'PATCH', body: { active: on } }); $('#edit').hidden = true; toast(on ? '다시 추적해요' : '마감했어요'); load(); } catch (e) { toast(e.message); }
+}
+async function delItem() {
+  if (!confirm('기록과 캡처까지 모두 삭제할까요? 되돌릴 수 없어요')) return;
+  try { await api('admin/items/' + editId, { method: 'DELETE' }); $('#edit').hidden = true; toast('삭제했어요'); load(); } catch (e) { toast(e.message); }
+}
+document.body.insertAdjacentHTML('beforeend', CAP_MODAL);
+load();
+</script>
+</body></html>
