@@ -113,7 +113,7 @@ function itemHtml(i) {
       <div class="rk">${n}${delta}</div></div>
     ${progHtml(i)}
     <div class="grid2">
-      <div class="box"><div class="bt"><span>순위 추이 (30일)</span></div>${chart(cs, D.today, 30, i.top_n)}</div>
+      <div class="box"><div class="bt"><span>순위 추이 (7일)</span></div>${chart(cs, D.today, 7, i.top_n)}</div>
       <div class="box"><div class="bt"><span>${ref ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span>${ref && ref.ads ? `<span>광고 ${ref.ads}개 제외</span>` : ''}</div>
         ${top ? `<ul class="top5">${top}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
     </div>
