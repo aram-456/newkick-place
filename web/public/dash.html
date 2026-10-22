@@ -57,17 +57,16 @@ function card(i) {
   const cs = ck(i.id), cur = cs.find(c => c.date === D.today), last = cs.at(-1), ref = cur || last;
   const n = !ref ? '<div class="n" style="font-size:22px;color:var(--mute)">확인 전</div>' : ref.in_top ? `<div class="n ok">${ref.rank}<small>위</small></div>` : `<div class="n out">${i.top_n}위 밖</div>`;
   const sub = ref && ref !== cur ? `<div class="d eq">${md(ref.date)} 기준</div>` : '';
-  const best = cs.filter(c => c.in_top).reduce((m, c) => Math.min(m, c.rank), 99);
-  const days30 = cs.filter(c => c.date >= addDays(D.today, -29));
-  const inDays = days30.filter(c => c.in_top).length;
   return `<section class="sec">
-    <div class="ih"><div class="t"><div class="c">키워드</div><div class="k">${esc(i.keyword)}</div><div class="p">${esc(i.place_name || D.company.name)}</div></div><div class="rk">${n}${sub}</div></div>
-    <div class="strip three" style="margin-top:16px;max-width:none"><div><div class="k">노출 일수</div><div class="v">${i.done}<small>/ ${i.target}일</small></div></div><div><div class="k">남은 일수</div><div class="v">${Math.max(0, i.target - i.done)}<small>일</small></div></div><div><div class="k">최고 순위</div><div class="v">${best < 99 ? best + '<small>위</small>' : '-'}</div></div></div>
-    <div class="prog" style="margin-top:12px"><div class="pt"><span>${i.cycle_from ? md(i.cycle_from) + ' 시작' : ''}${i.round > 1 ? ' · ' + i.round + '회차' : ''}</span><span>${Math.min(100, Math.round(i.done / i.target * 100))}%</span></div><div class="pb"><i style="width:${Math.min(100, Math.round(i.done / i.target * 100))}%"></i></div></div>
-    <div class="capbox">
-      <div><div class="cap-h">순위 추이 (7일)</div><div class="box">${chart(cs, D.today, 7, i.top_n)}</div>${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}</div>
-      <div>${ref && ref.cap_key ? `<div class="cap-h">${ref.date === D.today ? '오늘' : md(ref.date)} 검색 화면</div><div class="shot" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : ''}</div>
-    </div></section>`;
+    <div class="ih"><div class="t"><div class="k">${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
+    ${progHtml(i, cs, D.today)}
+    <div class="grid2 tc">
+      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)')}
+      <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 검색 화면' : '검색 화면'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
+        ${ref && ref.cap_key ? `<div class="capthumb" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : '<div class="sub">확인 후 표시돼요</div>'}</div>
+    </div>
+    ${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}
+  </section>`;
 }
 document.body.insertAdjacentHTML('beforeend', CAP_MODAL);
 load();
