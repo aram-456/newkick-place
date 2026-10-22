@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>뉴킥 플레이스 순위 로그인</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{--bg:#f2f4f6;--card:#fff;--tx:#191f28;--mute:#8b95a1;--line:#e5e8eb;--no:#f04452}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--tx);font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;letter-spacing:-.01em}
+form{background:var(--card);border-radius:24px;padding:34px 30px;width:min(380px,90vw)}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mute);font-size:13px;margin-bottom:18px}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:15px;background:var(--card);color:var(--tx);font-family:inherit}
+button{width:100%;margin-top:18px;background:var(--tx);color:var(--bg);border:0;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+#err{color:var(--no);font-size:13px;min-height:18px;margin-top:10px}
+</style></head><body>
+<form id="f">
+ <img src="/logo.svg" alt="NEWKICK" style="height:28px;margin-bottom:18px"><h1>플레이스 순위 관리</h1><div class="sub">상위노출 대시보드 관리자 계정으로 로그인하세요</div>
+ <label for="login">아이디</label><input id="login" autocomplete="username" required>
+ <label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password" required>
+ <button id="go">로그인</button><div id="err"></div>
+</form>
+<script>
+const next=new URLSearchParams(location.search).get("next");
+const go=()=>{location.href=next&&next.startsWith("/")&&!next.startsWith("//")?next:"/admin"};
+fetch("/api/me").then(r=>r.ok?go():0);
+document.getElementById("f").onsubmit=async e=>{e.preventDefault();const b=document.getElementById("go"),er=document.getElementById("err");b.disabled=true;er.textContent="";
+ try{const r=await fetch("/api/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({login:document.getElementById("login").value,password:document.getElementById("pw").value})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||"로그인 실패");go()}catch(x){er.textContent=x.message}finally{b.disabled=false}};
+</script></body></html>
