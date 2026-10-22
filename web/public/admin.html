@@ -10,7 +10,7 @@
 <div class="bar0"><div class="in">
   <div class="brand"><img src="/logo.svg" alt="NEWKICK"><i></i><span>플레이스 순위</span></div>
   <div class="act">
-    <a class="btn" href="https://newkick.pages.dev/admin" target="_blank" rel="noopener">상위노출 대시보드</a>
+    <button class="btn" onclick="$('#coSec').scrollIntoView({behavior:'smooth',block:'start'})">업체별 대시보드</button>
     <button class="btn pri" id="runAll" onclick="runNow()">지금 체크</button>
     <button class="btn" onclick="logout()">로그아웃</button>
   </div>
@@ -21,6 +21,11 @@
     <h1>오늘 플레이스 순위</h1>
     <div class="meta" id="meta">불러오는 중…</div>
     <div class="strip" id="kpi"><div><div class="k">추적 중</div><div class="v">-</div></div><div><div class="k">5위 안</div><div class="v">-</div></div><div><div class="k">5위 밖</div><div class="v">-</div></div><div><div class="k">마지막 체크</div><div class="v">-</div></div></div>
+  </section>
+
+  <section class="sec" id="coSec" style="scroll-margin-top:70px">
+    <div class="sh"><h2>업체별 대시보드</h2><span class="sub">업체에 보내는 리포트 화면 · 로그인 없이 열려요</span></div>
+    <div id="coList2"></div>
   </section>
 
   <section class="sec">
@@ -89,6 +94,12 @@ function render() {
     <span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성' : '마감'} ${i.closed_at ? md(i.closed_at) : ''} · ${i.done}/${i.target}일</span></span>
     <span class="act"><button class="btn sm" onclick="openItemCap(${i.id})">캡처</button>${i.close_kind === 'done' ? `<button class="btn sm" onclick="extend(${i.id})">연장</button>` : `<button class="btn sm" onclick="setActive(1, ${i.id})">다시 추적</button>`}</span></div>`).join('');
   $('#coList').innerHTML = D.companies.map(c => `<option value="${esc(c.name)}">`).join('');
+  $('#coList2').innerHTML = D.companies.filter(c => c.active).map(c => {
+    const its = act.filter(i => i.company === c.slug);
+    const ranks = its.map(i => { const k = checksOf(i.id).find(x => x.date === t); return `<span class="pill ${!k ? '' : k.in_top === null ? 'wa' : k.in_top ? 'blue' : 'no'}">${esc(i.keyword)} ${!k ? '체크 전' : k.in_top === null ? '오류' : k.in_top ? k.rank + '위' : i.top_n + '위 밖'}</span>`; }).join(' ');
+    return `<div class="corow"><div class="cn"><b>${esc(c.name)}</b><span class="sub">/c/${esc(c.slug)} · 진행 ${its.length}개${end.filter(i => i.company === c.slug).length ? ' · 마감 ' + end.filter(i => i.company === c.slug).length + '개' : ''}</span><div class="cr">${ranks}</div></div>
+      <div class="act"><a class="btn sm pri" href="/c/${encodeURIComponent(c.slug)}" target="_blank" rel="noopener">대시보드 열기</a><button class="btn sm" onclick="copyLink('${esc(c.slug)}')">주소 복사</button></div></div>`;
+  }).join('') || '<div class="empty">등록된 업체가 없어요</div>';
   $('#runs').innerHTML = D.runs.length ? D.runs.map(r => `<div class="r"><span class="w">${esc(r.at ? md(r.at.slice(0, 10)) + ' ' + r.at.slice(11) : r.date)}</span><span class="pill ${r.status === 'done' || r.status === 'started' ? 'blue' : r.status === 'failed' ? 'no' : ''}">${{ started: '시작', done: '완료', failed: '실패', skip: '건너뜀' }[r.status] || esc(r.status)}</span><span>${esc(slotName(r.slot))} ${esc(r.detail || '')}</span></div>`).join('') : '<div class="empty">아직 기록이 없어요</div>';
   coChanged();
   if (!$('#fStart').value) $('#fStart').value = D.today;
@@ -112,10 +123,11 @@ function itemHtml(i) {
       <div class="p">${esc(i.place_name || '플레이스 ' + i.place_id)}${i.memo ? ' · ' + esc(i.memo) : ''}</div></div>
       <div class="rk">${n}${delta}</div></div>
     ${progHtml(i)}
-    <div class="grid2">
-      <div class="box"><div class="bt"><span>순위 추이 (7일)</span></div>${chart(cs, D.today, 7, i.top_n)}</div>
+    <div class="grid2 tc">
       <div class="box"><div class="bt"><span>${ref ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span>${ref && ref.ads ? `<span>광고 ${ref.ads}개 제외</span>` : ''}</div>
         ${top ? `<ul class="top5">${top}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
+      <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 캡처' : '캡처'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
+        ${ref && ref.cap_key ? `<div class="capthumb" onclick="openItemCap(${i.id}, '${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="캡처" loading="lazy"></div>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
     </div>
     ${dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from)}
     <div class="ia">
