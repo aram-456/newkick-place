@@ -171,10 +171,11 @@ async function clientData(env, slug, days) {
   const DB = env.DB;
   const co = await DB.prepare('SELECT slug, name FROM companies WHERE slug=? AND active=1').bind(slug).first();
   if (!co) return null;
-  const { results: items } = await DB.prepare('SELECT id, keyword, place_name, top_n, target, cycle_from, round, closed_at, close_kind, active FROM items WHERE company=? ORDER BY active DESC, id').bind(slug).all();
+  const { results: items } = await DB.prepare('SELECT id, keyword, place_id, place_name, place_url, top_n, target, cycle_from, round, closed_at, close_kind, active FROM items WHERE company=? ORDER BY active DESC, id').bind(slug).all();
   const ids = items.map(i => i.id);
-  const checks = ids.length ? (await DB.prepare(`SELECT item_id, date, rank, in_top, cap_key, at FROM checks WHERE date>=? AND in_top IS NOT NULL AND item_id IN (${ids.map(() => '?').join(',')}) ORDER BY date`)
+  const checks = ids.length ? (await DB.prepare(`SELECT item_id, date, rank, in_top, top_list, cap_key, at FROM checks WHERE date>=? AND in_top IS NOT NULL AND item_id IN (${ids.map(() => '?').join(',')}) ORDER BY date`)
     .bind(kst(-days), ...ids).all()).results : [];
+  for (const c of checks) c.top_list = JSON.parse(c.top_list || '[]');
   // 회차별 노출일 수 (그래프 기간과 상관없이 전체 집계)
   for (const i of items) i.done = (await DB.prepare('SELECT COUNT(*) n FROM checks WHERE item_id=? AND in_top=1 AND date>=?').bind(i.id, i.cycle_from || '0000').first()).n;
   return { today: kst(), company: co, items, checks };
