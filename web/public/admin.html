@@ -117,15 +117,13 @@ function itemHtml(i) {
     delta = a === b ? '<div class="d eq">어제와 같음</div>' : b < a ? `<div class="d up">▲ ${a - b}계단 상승</div>` : `<div class="d dn">▼ ${b - a}계단 하락</div>`;
   } else if (!cur && last) delta = `<div class="d eq">최근 ${md(last.date)} ${rankText({ ...last, top_n: i.top_n })}</div>`;
   const ref = cur && cur.in_top !== null ? cur : last;
-  const top = ref ? ref.top_list.slice(0, i.top_n).map((x, k) => `<li class="${x.id === i.place_id ? 'me' : ''}"><b>${k + 1}</b><span>${esc(x.name || '이름 없음')}</span></li>`).join('') : '';
   return `<div class="item">
     <div class="ih"><div class="t"><div class="c">${esc(coName(i.company))}</div><div class="k">${esc(i.keyword)}</div>
-      <div class="p">${esc(i.place_name || '플레이스 ' + i.place_id)}${i.memo ? ' · ' + esc(i.memo) : ''}</div></div>
+      <div class="p"><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">${esc(i.place_name || '플레이스 ' + i.place_id)} ↗</a>${i.memo ? ' · ' + esc(i.memo) : ''}</div></div>
       <div class="rk">${n}${delta}</div></div>
-    ${progHtml(i)}
+    ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
-      <div class="box"><div class="bt"><span>${ref ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 상위 ' + i.top_n + '개 (광고 제외)' : '상위 목록'}</span>${ref && ref.ads ? `<span>광고 ${ref.ads}개 제외</span>` : ''}</div>
-        ${top ? `<ul class="top5">${top}</ul>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
+      ${top5Html(i, ref, D.today, '모바일 검색 기준 ' + i.top_n + '순위 이내 보장 (광고 제외)')}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 캡처' : '캡처'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
         ${ref && ref.cap_key ? `<div class="capthumb" onclick="openItemCap(${i.id}, '${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="캡처" loading="lazy"></div>` : '<div class="sub">체크 후 표시돼요</div>'}</div>
     </div>
@@ -145,10 +143,6 @@ function openItemCap(id, date) {
 // 일별 칸 클릭 -> 그 날짜 캡처 (dayChips 가 capOf<id>('날짜') 를 부름)
 function defineCapFns() { D.items.forEach(i => { window['capOf' + i.id] = d => openItemCap(i.id, d); }); }
 
-function progHtml(i) {
-  const pct = Math.min(100, Math.round(i.done / i.target * 100)), left = Math.max(0, i.target - i.done);
-  return `<div class="prog"><div class="pt"><span>노출 <b>${i.done}</b> / ${i.target}일${i.round > 1 ? ` · ${i.round}회차` : ''}</span><span>${left ? '남은 ' + left + '일' : '목표 달성'} · ${i.cycle_from ? md(i.cycle_from) + ' 시작' : ''}</span></div><div class="pb"><i style="width:${pct}%"></i></div></div>`;
-}
 async function extend(id) {
   const i = D.items.find(x => x.id === id);
   if (!confirm(`${i.keyword} 키워드를 연장할까요? 오늘부터 새 ${i.target}일 회차를 시작해요`)) return;
