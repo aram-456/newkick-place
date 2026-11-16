@@ -71,3 +71,6 @@ details.ended summary{cursor:pointer;font-weight:700;color:var(--tx2);font-size:
 .box .days{margin-top:12px;padding-top:12px;border-top:1px solid #e5e8eb}
 .grid2.tc>.box:first-child{display:flex;flex-direction:column}.grid2.tc>.box:first-child .g5{margin-top:auto;padding-top:12px}
 .plink{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;margin-top:4px}.plink:hover{text-decoration:underline}
+/* 진행 중 / 마감 구분 탭 */
+.seg2{display:flex;gap:6px;margin:14px 0 2px}.seg2 button{border:0;background:#fff;color:#4e5968;border-radius:99px;padding:9px 16px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.seg2 button.on{background:#191f28;color:#fff}.seg2 button span{opacity:.7;margin-left:4px;font-weight:500}
