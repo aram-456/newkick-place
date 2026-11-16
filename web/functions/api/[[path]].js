@@ -206,7 +206,7 @@ export async function onRequest({ request: req, env }) {
 
     // 업체 화면: 로그인 없이 주소(/c/업체주소)로 열람
     if (p === 'data' && m === 'GET') {
-      const d = await clientData(env, url.searchParams.get('c') || '', 62);
+      const d = await clientData(env, url.searchParams.get('c') || '', 400);   // 마감 회차 히스토리까지
       return d ? j(d) : bad('없는 업체예요', 404);
     }
     if (p.startsWith('cap/') && m === 'GET') {
@@ -256,8 +256,15 @@ export async function onRequest({ request: req, env }) {
       if (b.start !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(b.start)) await env.DB.prepare('UPDATE items SET cycle_from=? WHERE id=?').bind(b.start, id).run();
       if (b.active === 0 || b.active === false) await env.DB.prepare("UPDATE items SET active=0, closed_at=?, close_kind='manual' WHERE id=?").bind(kst(), id).run();
       if (b.active === 1 || b.active === true) await env.DB.prepare('UPDATE items SET active=1, closed_at=NULL, close_kind=NULL WHERE id=?').bind(id).run();
-      if (b.extend) await env.DB.prepare('UPDATE items SET active=1, closed_at=NULL, close_kind=NULL, cycle_from=?, round=COALESCE(round,1)+1, target=? WHERE id=?')
-        .bind(kst(), Math.min(Math.max(+b.target || 25, 1), 365), id).run();
+      if (b.extend) {   // 연장 = 새 회차를 별도 항목으로 만들고 지난 회차는 마감 기록으로 그대로 보관 (히스토리 유지)
+        const o = await env.DB.prepare('SELECT * FROM items WHERE id=?').bind(id).first();
+        if (!o) return bad('없는 항목이에요', 404);
+        if (o.active) await env.DB.prepare("UPDATE items SET active=0, closed_at=?, close_kind=COALESCE(close_kind,'manual') WHERE id=?").bind(kst(), id).run();
+        const nr = await env.DB.prepare('INSERT INTO items (company, keyword, place_id, place_name, place_url, top_n, target, cycle_from, round, memo) VALUES (?,?,?,?,?,?,?,?,?,?) RETURNING id')
+          .bind(o.company, o.keyword, o.place_id, o.place_name, o.place_url, o.top_n, Math.min(Math.max(+b.target || o.target || 25, 1), 365), kst(), (o.round || 1) + 1, o.memo || '').first();
+        await logEv(env, req, me.login, 'item_extend', o.keyword + ' ' + ((o.round || 1) + 1) + '회차');
+        return j({ ok: true, id: nr.id, round: (o.round || 1) + 1 });
+      }
       if (b.link) {
         const pid = await resolvePlace(b.link);
         if (!pid) return bad('플레이스 링크에서 업체 ID를 찾지 못했어요');
