@@ -112,9 +112,10 @@ async function ingest(p, req, env, url) {
     const ids = (url.searchParams.get('ids') || '').split(',').map(Number).filter(Boolean);
     const force = url.searchParams.get('force') === '1';
     let sql = `SELECT i.id, i.keyword, i.place_id, i.place_name, i.top_n, c.name company_name FROM items i JOIN companies c ON c.slug=i.company
-      WHERE i.active=1 AND c.active=1`;
+      WHERE c.active=1`;
     const a = [];
     if (ids.length) sql += ` AND i.id IN (${ids.map(() => '?').join(',')})`, a.push(...ids);
+    if (!(ids.length && force)) sql += ' AND i.active=1';   // 마감 항목도 번호 지정 + 강제 체크면 확인 가능 (보고용)
     if (!force) sql += ' AND NOT EXISTS (SELECT 1 FROM checks k WHERE k.item_id=i.id AND k.date=? AND k.in_top IS NOT NULL)', a.push(kst());
     const { results } = await DB.prepare(sql + ' ORDER BY i.id').bind(...a).all();
     return j({ date: kst(), items: results });
@@ -160,7 +161,7 @@ async function adminData(env, days) {
   const DB = env.DB, since = kst(-days);
   const [co, it, ck, rn] = await Promise.all([
     DB.prepare('SELECT slug, name, memo, active FROM companies ORDER BY name').all(),
-    DB.prepare(`SELECT i.*, (SELECT COUNT(*) FROM checks k WHERE k.item_id=i.id AND k.in_top=1 AND k.date>=COALESCE(i.cycle_from,'0000')) done
+    DB.prepare(`SELECT i.*, (SELECT COUNT(*) FROM checks k WHERE k.item_id=i.id AND k.in_top=1 AND k.date>=COALESCE(i.cycle_from,'0000') AND k.date<=COALESCE(i.closed_at,'9999')) done
       FROM items i ORDER BY i.active DESC, i.company, i.id`).all(),
     DB.prepare('SELECT item_id, date, rank, in_top, top_list, ads, cap_key, error, source, at FROM checks WHERE date>=? ORDER BY date').bind(since).all(),
     DB.prepare('SELECT date, slot, status, detail, at FROM runs ORDER BY id DESC LIMIT 12').all(),
@@ -177,7 +178,7 @@ async function clientData(env, slug, days) {
     .bind(kst(-days), ...ids).all()).results : [];
   for (const c of checks) c.top_list = JSON.parse(c.top_list || '[]');
   // 회차별 노출일 수 (그래프 기간과 상관없이 전체 집계)
-  for (const i of items) i.done = (await DB.prepare('SELECT COUNT(*) n FROM checks WHERE item_id=? AND in_top=1 AND date>=?').bind(i.id, i.cycle_from || '0000').first()).n;
+  for (const i of items) i.done = (await DB.prepare('SELECT COUNT(*) n FROM checks WHERE item_id=? AND in_top=1 AND date>=? AND date<=?').bind(i.id, i.cycle_from || '0000', i.closed_at || '9999').first()).n;   // 마감 후 확인 기록은 노출일에 더하지 않음
   return { today: kst(), company: co, items, checks };
 }
 
