@@ -70,3 +70,12 @@ INSERT OR IGNORE INTO checks (item_id, date, rank, in_top, top_list, ads, cap_ke
 UPDATE items SET active=0, closed_at='2026-11-15', close_kind='done'
   WHERE id=1 AND active=1 AND closed_at IS NULL AND cycle_from='2026-10-22'
   AND (SELECT COUNT(*) FROM checks WHERE item_id=1 AND in_top=1 AND date>='2026-10-22') >= target;
+
+-- 2026-11-16: 한림병원 인천종합병원 2회차 시작 (1회차 기록은 마감 항목으로 보관). 오늘 체크 결과를 2회차 첫 기록으로 연결 (한 번만 적용)
+INSERT INTO items (company, keyword, place_id, place_name, place_url, top_n, target, cycle_from, round, memo)
+  SELECT company, keyword, place_id, place_name, place_url, top_n, target, '2026-11-16', 2, '' FROM items
+  WHERE id=1 AND active=0 AND NOT EXISTS (SELECT 1 FROM items x WHERE x.company=items.company AND x.keyword=items.keyword AND x.round=2);
+INSERT OR IGNORE INTO checks (item_id, date, rank, in_top, top_list, ads, cap_key, error, source, at)
+  SELECT (SELECT x.id FROM items x WHERE x.company='hallym' AND x.round=2 AND x.cycle_from='2026-11-16' ORDER BY x.id LIMIT 1), date, rank, in_top, top_list, ads, cap_key, error, source, at
+  FROM checks WHERE item_id=1 AND date='2026-11-16'
+  AND EXISTS (SELECT 1 FROM items x WHERE x.company='hallym' AND x.round=2 AND x.cycle_from='2026-11-16');
