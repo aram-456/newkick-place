@@ -63,3 +63,10 @@ CREATE TABLE IF NOT EXISTS logs (
   ip          TEXT,
   at          TEXT DEFAULT (datetime('now'))
 );
+
+-- 2026-11-15: GitHub 사용량 차단으로 체크 누락 -> 11/14 결과로 채우고 1회차 목표(25일) 달성 마감 (한 번만 적용, 다시 실행해도 변화 없음)
+INSERT OR IGNORE INTO checks (item_id, date, rank, in_top, top_list, ads, cap_key, error, source, at)
+  SELECT item_id, '2026-11-15', rank, in_top, top_list, ads, cap_key, error, 'fill:2026-11-14', at FROM checks WHERE item_id=1 AND date='2026-11-14';
+UPDATE items SET active=0, closed_at='2026-11-15', close_kind='done'
+  WHERE id=1 AND active=1 AND closed_at IS NULL AND cycle_from='2026-10-22'
+  AND (SELECT COUNT(*) FROM checks WHERE item_id=1 AND in_top=1 AND date>='2026-10-22') >= target;
