@@ -50,7 +50,7 @@ function render() {
   $('#coName').textContent = D.company.name; $('#coTop').textContent = D.company.name;
   const last = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
   $('#meta').textContent = `${md(t)}(${wd(t)}) 기준` + (last ? ` · 최근 확인 ${last.slice(0, 10) === t ? '오늘' : md(last.slice(0, 10))} ${last.slice(11)}` : '');
-  D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword + (i.round > 1 ? ' · ' + i.round + '회차' : ''), ck(i.id), d); });
+  D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword, ck(i.id), d); });
   if (!TAB) TAB = items.length || !ended.length ? 'on' : 'end';
   const tabs = `<div class="seg2"><button class="${TAB === 'on' ? 'on' : ''}" onclick="TAB='on';render()">진행 중 <span>${items.length}</span></button><button class="${TAB === 'end' ? 'on' : ''}" onclick="TAB='end';render()">마감 <span>${ended.length}</span></button></div>`;
   const pick = TAB === 'on' ? items : ended;
@@ -64,7 +64,7 @@ function card(i) {
   const title = !i.active ? `<span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성 마감' : '마감'}</span>` : '<span class="pill blue" style="margin-left:6px">진행 중</span>';
   return `<section class="sec">
     <div class="ih"><div class="t"><div class="k">키워드 : ${esc(i.keyword)}${title}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
-    ${progHtml(i, cs, D.today)}
+    ${progHtml({ ...i, round: 1 }, cs, D.today)}
     <div class="grid2 tc">
       ${top5Html(i, ref, end, '', dayChips(cs, end, span, i.top_n, 'capOf' + i.id, i.cycle_from))}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 검색 화면' : '검색 화면'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
