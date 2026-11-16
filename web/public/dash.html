@@ -40,28 +40,33 @@ async function load() {
   } catch (e) { $('#list').innerHTML = `<section class="sec"><div class="empty">${esc(e.message)}</div></section>`; $('#meta').textContent = ''; }
   fetch('/api/me').then(r => r.ok ? r.json() : null).then(me => { if (me) $('#staff').innerHTML = '<a class="btn" href="/admin">관리 화면</a>'; });
 }
-const ck = id => D.checks.filter(c => c.item_id === id);
+// 회차 기간 안의 기록만 (마감 후 확인 기록은 다음 회차 것)
+const ck = id => { const i = D.items.find(x => x.id === id) || {}; return D.checks.filter(c => c.item_id === id && (!i.cycle_from || c.date >= i.cycle_from) && (!i.closed_at || c.date <= i.closed_at)); };
+let TAB = '';
+const days = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5) + 1;
 function render() {
-  const t = D.today, items = D.items.filter(i => i.active), ended = D.items.filter(i => !i.active);
+  const t = D.today, items = D.items.filter(i => i.active), ended = D.items.filter(i => !i.active).sort((a, b) => String(b.closed_at || '').localeCompare(String(a.closed_at || '')));
   document.title = D.company.name + ' 플레이스 리포트';
   $('#coName').textContent = D.company.name; $('#coTop').textContent = D.company.name;
   const last = D.checks.map(c => c.at).filter(Boolean).sort().at(-1);
   $('#meta').textContent = `${md(t)}(${wd(t)}) 기준` + (last ? ` · 최근 확인 ${last.slice(0, 10) === t ? '오늘' : md(last.slice(0, 10))} ${last.slice(11)}` : '');
-  D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword, ck(i.id), d); });
-  $('#list').innerHTML = (items.length ? items.map(card).join('') : '<section class="sec"><div class="empty">진행 중인 키워드가 없어요</div></section>')
-    + (ended.length ? `<section class="sec"><div class="sh"><h2>마감된 키워드</h2></div>${ended.map(i => `<div class="endrow"><span><b>${esc(i.keyword)}</b>${i.round > 1 ? ` (${i.round}회차)` : ''}
-      <span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성' : '마감'} · 노출 ${i.done}/${i.target}일</span></span>
-      <span class="sub">${i.cycle_from ? md(i.cycle_from) : ''} ~ ${i.closed_at ? md(i.closed_at) : ''} <button class="btn sm" style="margin-left:8px" onclick="capOf${i.id}('${i.closed_at || ''}')">캡처</button></span></div>`).join('')}</section>` : '');
+  D.items.forEach(i => { window['capOf' + i.id] = d => openCap(i.keyword + (i.round > 1 ? ' · ' + i.round + '회차' : ''), ck(i.id), d); });
+  if (!TAB) TAB = items.length || !ended.length ? 'on' : 'end';
+  const tabs = `<div class="seg2"><button class="${TAB === 'on' ? 'on' : ''}" onclick="TAB='on';render()">진행 중 <span>${items.length}</span></button><button class="${TAB === 'end' ? 'on' : ''}" onclick="TAB='end';render()">마감 <span>${ended.length}</span></button></div>`;
+  const pick = TAB === 'on' ? items : ended;
+  $('#list').innerHTML = tabs + (pick.length ? pick.map(card).join('') : `<section class="sec"><div class="empty">${TAB === 'on' ? '진행 중인 키워드가 없어요' : '마감된 키워드가 없어요'}</div></section>`);
 }
 function card(i) {
-  const cs = ck(i.id), cur = cs.find(c => c.date === D.today), last = cs.at(-1), ref = cur || last;
+  const cs = ck(i.id), end = !i.active && i.closed_at ? i.closed_at : D.today, cur = cs.find(c => c.date === end), last = cs.at(-1), ref = cur || last;
   const n = !ref ? '<div class="n" style="font-size:22px;color:var(--mute)">확인 전</div>' : ref.in_top ? `<div class="n ok">${ref.rank}<small>위</small></div>` : `<div class="n out">${i.top_n}위 밖</div>`;
-  const sub = ref && ref !== cur ? `<div class="d eq">${md(ref.date)} 기준</div>` : '';
+  const sub = !i.active ? `<div class="d eq">${ref ? md(ref.date) + ' 기준' : ''}</div>` : ref && ref !== cur ? `<div class="d eq">${md(ref.date)} 기준</div>` : '';
+  const span = i.cycle_from ? Math.min(400, Math.max(14, days(i.cycle_from, end))) : 14;
+  const title = !i.active ? `<span class="pill ${i.close_kind === 'done' ? 'ok' : ''}" style="margin-left:6px">${i.close_kind === 'done' ? '목표 달성 마감' : '마감'}</span>` : '<span class="pill blue" style="margin-left:6px">진행 중</span>';
   return `<section class="sec">
-    <div class="ih"><div class="t"><div class="k">키워드 : ${esc(i.keyword)}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
+    <div class="ih"><div class="t"><div class="k">키워드 : ${esc(i.keyword)}${title}</div><a class="plink" href="${esc(placeLink(i))}" target="_blank" rel="noopener">플레이스 바로가기 ↗</a></div><div class="rk">${n}${sub}</div></div>
     ${progHtml(i, cs, D.today)}
     <div class="grid2 tc">
-      ${top5Html(i, ref, D.today, '', dayChips(cs, D.today, 14, i.top_n, 'capOf' + i.id, i.cycle_from))}
+      ${top5Html(i, ref, end, '', dayChips(cs, end, span, i.top_n, 'capOf' + i.id, i.cycle_from))}
       <div class="box"><div class="bt"><span>${ref && ref.cap_key ? (ref.date === D.today ? '오늘' : md(ref.date)) + ' 검색 화면' : '검색 화면'}</span>${ref && ref.cap_key ? '<span>누르면 크게 보기</span>' : ''}</div>
         ${ref && ref.cap_key ? `<div class="capthumb" onclick="capOf${i.id}('${ref.date}')"><img src="/api/cap/${ref.cap_key}" alt="검색 화면 캡처" loading="lazy"></div>` : '<div class="sub">확인 후 표시돼요</div>'}</div>
     </div>
