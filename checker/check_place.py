@@ -157,7 +157,7 @@ def main():
         ctx = br.new_context(**dev, locale="ko-KR", timezone_id="Asia/Seoul")
         page = ctx.new_page()
         for it in items:
-            log(f"- {it['company_name']} / {it['keyword']} (플레이스 {it['place_id']})")
+            log(f"- 항목 {it['id']}")
             r = check(page, it, date)
             api("POST", "/api/ingest/result", r)
             if r.get("error"):
@@ -166,7 +166,7 @@ def main():
             else:
                 ok += 1
                 names = ", ".join(f"{i + 1}.{x['name']}" for i, x in enumerate(r["top_list"][:5]))
-                log(f"  순위: {r['rank'] or '순위 밖'} (광고 {r['ads']}개 제외) | {names}")
+                log(f"  순위: {r['rank'] or '순위 밖'} (광고 {r['ads']}개 제외)")
             time.sleep(2)
         br.close()
     api("POST", "/api/ingest/run", {"slot": SLOT, "status": "failed" if err and not ok else "done", "detail": f"정상 {ok}건, 오류 {err}건"})
