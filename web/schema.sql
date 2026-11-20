@@ -79,3 +79,9 @@ INSERT OR IGNORE INTO checks (item_id, date, rank, in_top, top_list, ads, cap_ke
   SELECT (SELECT x.id FROM items x WHERE x.company='hallym' AND x.round=2 AND x.cycle_from='2026-11-16' ORDER BY x.id LIMIT 1), date, rank, in_top, top_list, ads, cap_key, error, source, at
   FROM checks WHERE item_id=1 AND date='2026-11-16'
   AND EXISTS (SELECT 1 FROM items x WHERE x.company='hallym' AND x.round=2 AND x.cycle_from='2026-11-16');
+
+-- 2026-11-20: 오투성형외과 수원성형외과 11/19 3위 노출 시작 기록 (11/20 캡처를 같이 사용, 한 번만 적용)
+INSERT OR IGNORE INTO checks (item_id, date, rank, in_top, top_list, ads, cap_key, error, source, at)
+  SELECT item_id, '2026-11-19', 3, 1, top_list, ads, cap_key, NULL, 'fill:2026-11-20', '2026-11-19 ' || substr(at, 12) FROM checks
+  WHERE item_id=3 AND date='2026-11-20' AND in_top=1 AND cap_key IS NOT NULL
+  AND EXISTS (SELECT 1 FROM items WHERE id=3 AND company='o2ps' AND keyword='수원성형외과' AND cycle_from='2026-11-19');
